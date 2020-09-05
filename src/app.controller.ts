@@ -1,12 +1,15 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpService, Query, Response } from '@nestjs/common';
 import { AppService } from './app.service';
+import * as express from 'express';
+import * as puppeteer from 'puppeteer';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly appService: AppService, private httpService: HttpService) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  async getHello(@Query('link') link: string): Promise<any> {
+    console.log('link: ', link)
+    return this.appService.getHello(link);
   }
 }
