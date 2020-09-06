@@ -1,11 +1,34 @@
 import { HttpModule, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { NestCrawlerModule } from 'nest-crawler';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Connection } from 'typeorm';
+import { User } from './user/user.entity';
+import { Item } from './item/item.entity';
+import { ItemModule } from './item/item.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TasksModule } from './tasks/task.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [HttpModule],
-  controllers: [AppController],
-  providers: [AppService],
+    imports: [
+        HttpModule,
+        ConfigModule.forRoot(),
+        TypeOrmModule.forRoot({
+            type: 'postgres',
+            url: process.env.DATABASE_URL,
+            entities: [User, Item],
+            synchronize: true,
+            logging: 'all',
+        }),
+        ItemModule,
+        ScheduleModule.forRoot(),
+        TasksModule,
+    ],
+    controllers: [AppController],
+    providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+    constructor(private connection: Connection) {
+    }
+}

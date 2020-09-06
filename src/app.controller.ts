@@ -5,11 +5,12 @@ import * as puppeteer from 'puppeteer';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService, private httpService: HttpService) {}
+    constructor(private readonly appService: AppService, private httpService: HttpService) {
+    }
 
-  @Get()
-  async getHello(@Query('link') link: string): Promise<any> {
-    console.log('link: ', link)
-    return this.appService.getHello(link);
-  }
+    @Get()
+    async getHello(@Query('link') link: string): Promise<any> {
+        console.log('link: ', link);
+        return 'yep'
+    }
 }
