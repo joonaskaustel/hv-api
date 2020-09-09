@@ -3,8 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Item } from './item.entity';
 import * as puppeteer from 'puppeteer';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import * as SendGrid from '@sendgrid/mail'
+import * as SendGrid from '@sendgrid/mail';
 
 @Injectable()
 export class ItemService {
@@ -29,7 +28,7 @@ export class ItemService {
         // get all items
         const allItems = await this.repository.find();
 
-        allItems.map(async (item) => {
+        allItems.forEach(async (item) => {
             await this.retrieveItemPriceFromLink(item.urlLink);
         })
     }
@@ -69,9 +68,6 @@ export class ItemService {
         } else {
             // check if current price is lower than previous checked price
             if (currentLowestPrice < presentItem.price) {
-                console.log('siin ')
-                console.log('key ', process.env.SENDGRID_API_KEY)
-
                 console.log('saadan meili')
                 // notify user when price is cheaper
                 SendGrid.setApiKey(process.env.SENDGRID_API_KEY);
