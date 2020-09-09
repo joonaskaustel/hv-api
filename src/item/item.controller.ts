@@ -8,7 +8,6 @@ export class ItemController {
 
     @Post()
     async retrieveItemPriceFromLink(@Body() body: RetrievePriceDto): Promise<any> {
-        console.log('link: ', body.link)
         return this.itemService.retrieveItemPriceFromLink(body.link);
     }
 

@@ -28,7 +28,7 @@ export class ItemService {
         // get all items
         const allItems = await this.repository.find();
 
-        allItems.map(async (item) => {
+        allItems.forEach(async (item) => {
             await this.retrieveItemPriceFromLink(item.urlLink);
         })
     }

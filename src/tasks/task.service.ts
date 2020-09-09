@@ -8,18 +8,19 @@ export class TaskService {
     constructor(
       private itemService: ItemService,
       private httpService: HttpService,
-    ) {}
+    ) {
+    }
 
     private readonly logger = new Logger(TaskService.name);
 
     @Cron(CronExpression.EVERY_DAY_AT_7PM)
     async updatePrices(): Promise<void> {
-       await this.itemService.updatePrices();
+        await this.itemService.updatePrices();
     };
 
     @Cron('*/20 * * * *')
-    keepApiAlive(): void  {
-        console.log(chalk.white.bgCyan('POLLING API'))
+    keepApiAlive(): void {
+        console.log(chalk.white.bgCyan('POLLING API'));
         this.httpService.get('https://evening-crag-89603.herokuapp.com/');
     };
 }
