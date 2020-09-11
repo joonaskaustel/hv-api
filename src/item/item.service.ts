@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Item } from './item.entity';
+import {Injectable} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {Item} from './item.entity';
 import * as puppeteer from 'puppeteer';
 import * as SendGrid from '@sendgrid/mail';
 
@@ -28,9 +28,9 @@ export class ItemService {
         // get all items
         const allItems = await this.repository.find();
 
-        allItems.forEach(async (item) => {
+        for (const item of allItems) {
             await this.retrieveItemPriceFromLink(item.urlLink);
-        })
+        }
     }
 
     async retrieveItemPriceFromLink(link: string): Promise<number> {
@@ -43,28 +43,43 @@ export class ItemService {
             ]
         });
         const page = await browser.newPage();
-        await page.goto(link);
+        await page.goto(link, {waitUntil: 'networkidle2'});
+
 
         // use puppeteers evaluate method to retrieve elements
-        const prices = await page.evaluate(() => {
+        const data = await page.evaluate(() => {
+
             // get main prices by using their class name
-            return Array.from(document.getElementsByClassName('extra-offers-price'), e => {
+            const prices = Array.from(document.getElementsByClassName('extra-offers-price'), e => {
                 // after base price element is retrieved, get attribute to get price without currency
-                return parseFloat(e.getAttribute('data-price'))
+                return parseFloat(e.getAttribute('data-price'));
             })
+
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            const imageUrl = document.querySelector('p[class="inner product-image"] > a[class="modal-image cboxElement"]').href;
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            const name = document.querySelector('p[class="inner product-image"] > a[class="modal-image cboxElement"]').title;
+
+            return {
+                prices,
+                imageUrl,
+                name
+            }
         });
 
-        browser.close();
+        await browser.close();
 
         // get lowest price
-        const currentLowestPrice = Math.min(...prices);
+        const currentLowestPrice = Math.min(...data.prices);
 
         // check if item is already in db
         const presentItem = await this.repository.findOne({ urlLink: link})
 
         // if not then save
         if (!presentItem) {
-            await this.repository.save({ name: 'test', price: currentLowestPrice, urlLink: link })
+            await this.repository.save({ name: data.name, price: currentLowestPrice, urlLink: link, imageUrl: data.imageUrl })
         } else {
             // check if current price is lower than previous checked price
             if (currentLowestPrice < presentItem.price) {
@@ -78,7 +93,7 @@ export class ItemService {
                     text: `Toode ${link} on nüüd odavam ja maksab ${currentLowestPrice}€`,
                     html: `<strong>Toode ${link} on nüüd odavam ja maksab  ${currentLowestPrice}€</strong>`,
                 };
-                SendGrid.send(msg);
+                await SendGrid.send(msg);
             }
 
             // update items price

@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
 
 @Entity()
 export class Item {
@@ -13,6 +13,9 @@ export class Item {
 
     @Column({nullable: false, type: 'numeric'})
     price: number;
+
+    @Column()
+    imageUrl: string;
 
     @CreateDateColumn()
     createdAt: Date;
