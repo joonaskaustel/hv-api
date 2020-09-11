@@ -37,14 +37,20 @@ export class ItemService {
 
         // puppeteer setup
         const browser = await puppeteer.launch({
-            args : [
+            headless: true,
+            args: [
                 '--no-sandbox',
-                '--disable-setuid-sandbox'
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
             ]
         });
         const page = await browser.newPage();
-        await page.goto(link, {waitUntil: 'networkidle2'});
 
+        await page.goto(link);
 
         // use puppeteers evaluate method to retrieve elements
         const data = await page.evaluate(() => {
