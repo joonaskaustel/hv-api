@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToMany } from 'typeorm';
+import { Item } from '../item/item.entity';
 
 @Entity()
 export class User {
@@ -11,6 +12,15 @@ export class User {
     @Column()
     lastName: string;
 
+    @Column({ nullable: false, unique: true })
+    email: string;
+
+    @Column({ nullable: false, unique: true })
+    googleId: string;
+
     @Column({ default: true })
     isActive: boolean;
+
+    @ManyToMany(() => Item, item => item.users)
+    items: Item[];
 }
