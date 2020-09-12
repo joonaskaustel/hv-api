@@ -7,6 +7,11 @@ import { AuthService } from './auth.service';
 
 config();
 
+enum Provider
+{
+  GOOGLE = 'google'
+}
+
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 

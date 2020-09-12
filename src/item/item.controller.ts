@@ -10,6 +10,7 @@ export class ItemController {
     @Post()
     @UseGuards(AuthGuard('jwt'))
     async retrieveItemPriceFromLink(@Body() body: RetrievePriceDto): Promise<any> {
+        console.log('fdasdfasdf')
         return this.itemService.retrieveItemPriceFromLink(body.link);
     }
 

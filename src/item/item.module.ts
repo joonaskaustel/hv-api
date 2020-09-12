@@ -5,12 +5,17 @@ import { ItemService } from './item.service';
 import { ItemController } from './item.controller';
 import { GoogleStrategy } from '../auth/google.strategy';
 import { JwtStrategy } from '../auth/jwt.strategy';
+import { AuthService } from '../auth/auth.service';
 
 @Module({
     imports: [TypeOrmModule.forFeature([Item])],
-    providers: [ItemService,
+    providers: [
+        ItemService,
         GoogleStrategy,
-        JwtStrategy],
+        JwtStrategy,
+        AuthService,
+    ],
     controllers: [ItemController],
 })
-export class ItemModule {}
+export class ItemModule {
+}

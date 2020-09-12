@@ -9,12 +9,17 @@ import { User } from '../user/user.entity';
 import { UsersModule } from '../user/user.module';
 import { UserRepository } from '../user/user.repository';
 import { JwtStrategy } from '../auth/jwt.strategy';
+import { AuthService } from '../auth/auth.service';
 
 @Module({
     imports: [TypeOrmModule.forFeature([User])],
-    providers: [GoogleService,
+    providers: [
+        GoogleService,
         GoogleStrategy,
-        JwtStrategy],
+        JwtStrategy,
+        AuthService,
+    ],
     controllers: [GoogleController],
 })
-export class GoogleModule {}
+export class GoogleModule {
+}
