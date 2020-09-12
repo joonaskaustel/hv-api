@@ -1,8 +1,9 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { sign } from 'jsonwebtoken';
+import { UserService } from '../user/user.service';
+import { User } from '../user/user.entity';
 
-enum Provider
-{
+export enum Provider {
     GOOGLE = 'google'
 }
 
@@ -11,30 +12,32 @@ export class AuthService {
 
     private readonly JWT_SECRET_KEY = 'VERY_SECRET_KEY'; // <- replace this with your secret key
 
-    constructor(/*private readonly usersService: UsersService*/) {
+    constructor(private readonly userService: UserService) {
     };
 
-    async validateOAuthLogin(thirdPartyId: string, provider: Provider): Promise<string>
-    {
-        try
-        {
+    async validateOAuthLogin(email: string, firstName: string, lastName: string, googleId: string, provider: Provider): Promise<string> {
+        try {
             // You can add some registration logic here,
             // to register the user using their thirdPartyId (in this case their googleId)
-            // let user: IUser = await this.usersService.findOneByThirdPartyId(thirdPartyId, provider);
+            let user: User = await this.userService.findOneByGoogleId(googleId);
 
-            // if (!user)
-            // user = await this.usersService.registerOAuthUser(thirdPartyId, provider);
+            if (!user) {
+                const newUser = new User();
+                newUser.googleId = googleId;
+                newUser.email = email;
+                newUser.firstName = firstName;
+                newUser.lastName = lastName;
+                user = await this.userService.save(newUser);
+            }
 
             const payload = {
-                thirdPartyId,
-                provider
-            }
+                googleId,
+                provider,
+            };
 
             const jwt: string = sign(payload, this.JWT_SECRET_KEY, { expiresIn: 3600 });
             return jwt;
-        }
-        catch (err)
-        {
+        } catch (err) {
             throw new InternalServerErrorException('validateOAuthLogin', err.message);
         }
     }

@@ -9,7 +9,7 @@ import { ItemModule } from './item/item.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TasksModule } from './tasks/task.module';
 import { ConfigModule } from '@nestjs/config';
-import { GoogleModule } from './google/google.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
     imports: [
@@ -25,7 +25,7 @@ import { GoogleModule } from './google/google.module';
         ItemModule,
         ScheduleModule.forRoot(),
         TasksModule,
-        GoogleModule,
+        AuthModule,
     ],
     controllers: [AppController],
     providers: [AppService],

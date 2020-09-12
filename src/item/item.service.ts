@@ -1,16 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { getRepository, Repository, SelectQueryBuilder } from 'typeorm';
 import { Item } from './item.entity';
 import * as puppeteer from 'puppeteer';
 import * as SendGrid from '@sendgrid/mail';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class ItemService {
+    private alias = 'i';
     constructor(
       @InjectRepository(Item)
       private repository: Repository<Item>,
+      private userService: UserService,
     ) {}
+
+    async createQueryBuilder(): Promise<SelectQueryBuilder<Item>> {
+        return getRepository(Item).createQueryBuilder(`${this.alias}`)
+          .leftJoinAndSelect(`"${this.alias}".users`, 'u')
+          ;
+    }
 
     findAll(): Promise<Item[]> {
         return this.repository.find();
@@ -19,6 +28,8 @@ export class ItemService {
     findOne(id: string): Promise<Item> {
         return this.repository.findOne(id);
     }
+
+
 
     async remove(id: string): Promise<void> {
         await this.repository.delete(id);
@@ -33,7 +44,11 @@ export class ItemService {
         })
     }
 
-    async retrieveItemPriceFromLink(link: string): Promise<number> {
+    async saveItemWithUser(link, googleId): Promise<any> {
+
+    }
+
+    async retrieveItemPriceFromLink(link: string, googleId?: string): Promise<number> {
 
         // puppeteer setup
         const browser = await puppeteer.launch({
@@ -60,11 +75,17 @@ export class ItemService {
         const currentLowestPrice = Math.min(...prices);
 
         // check if item is already in db
-        const presentItem = await this.repository.findOne({ urlLink: link})
+        const presentItem = await this.repository.findOne({ urlLink: link}, { relations: ['users'] })
+
+        const user = await this.userService.findOneByGoogleId(googleId);
+
+        console.log('presentItem ', presentItem)
+
+        presentItem.users.push(user)
 
         // if not then save
         if (!presentItem) {
-            await this.repository.save({ name: 'test', price: currentLowestPrice, urlLink: link })
+            await this.repository.save({ name: 'test', price: currentLowestPrice, urlLink: link, user })
         } else {
             // check if current price is lower than previous checked price
             if (currentLowestPrice < presentItem.price) {
@@ -82,7 +103,7 @@ export class ItemService {
             }
 
             // update items price
-            await this.repository.update(presentItem.id, { price: currentLowestPrice });
+            await this.repository.save(presentItem);
 
         }
 

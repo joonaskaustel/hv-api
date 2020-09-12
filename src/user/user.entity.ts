@@ -12,8 +12,11 @@ export class User {
     @Column()
     lastName: string;
 
-    @Column()
+    @Column({ nullable: false, unique: true })
     email: string;
+
+    @Column({ nullable: false, unique: true })
+    googleId: string;
 
     @Column({ default: true })
     isActive: boolean;
