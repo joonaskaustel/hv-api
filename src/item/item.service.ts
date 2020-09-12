@@ -75,37 +75,34 @@ export class ItemService {
         const currentLowestPrice = Math.min(...prices);
 
         // check if item is already in db
-        const presentItem = await this.repository.findOne({ urlLink: link}, { relations: ['users'] })
-
-        const user = await this.userService.findOneByGoogleId(googleId);
-
-        console.log('presentItem ', presentItem)
-
-        presentItem.users.push(user)
+        let presentItem = await this.repository.findOne({ urlLink: link}, { relations: ['users'] })
 
         // if not then save
         if (!presentItem) {
-            await this.repository.save({ name: 'test', price: currentLowestPrice, urlLink: link, user })
-        } else {
-            // check if current price is lower than previous checked price
-            if (currentLowestPrice < presentItem.price) {
-                console.log('saadan meili')
-                // notify user when price is cheaper
-                SendGrid.setApiKey(process.env.SENDGRID_API_KEY);
-                const msg = {
-                    to: 'joonas.kaustel@gmail.com',
-                    from: 'hinnasula@sula.com',
-                    subject: 'Hinnateavitus',
-                    text: `Toode ${link} on nüüd odavam ja maksab ${currentLowestPrice}€`,
-                    html: `<strong>Toode ${link} on nüüd odavam ja maksab  ${currentLowestPrice}€</strong>`,
-                };
-                SendGrid.send(msg);
-            }
-
-            // update items price
-            await this.repository.save(presentItem);
-
+            presentItem = await this.repository.save({ name: 'test', price: currentLowestPrice, urlLink: link });
         }
+
+        const user = await this.userService.findOneByGoogleId(googleId);
+
+        const item = await this.repository.findOne({ urlLink: link}, { relations: ['users'] })
+
+        item.users.push(user)
+
+        if (currentLowestPrice < presentItem.price) {
+            // notify user when price is cheaper
+            SendGrid.setApiKey(process.env.SENDGRID_API_KEY);
+            const msg = {
+                to: user.email,
+                from: 'hinnasula@sula.com',
+                subject: 'Hinnateavitus',
+                text: `Toode ${link} on nüüd odavam ja maksab ${currentLowestPrice}€`,
+                html: `<strong>Toode ${link} on nüüd odavam ja maksab  ${currentLowestPrice}€</strong>`,
+            };
+            SendGrid.send(msg);
+        }
+
+        // update items price
+        await this.repository.save(item);
 
         return currentLowestPrice;
     }
