@@ -17,10 +17,4 @@ export class TaskService {
     async updatePrices(): Promise<void> {
         await this.itemService.updatePrices();
     };
-
-    @Cron('*/20 * * * *')
-    keepApiAlive(): void {
-        console.log(chalk.white.bgCyan('POLLING API'));
-        this.httpService.get('https://evening-crag-89603.herokuapp.com/');
-    };
 }

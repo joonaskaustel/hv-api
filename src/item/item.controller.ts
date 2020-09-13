@@ -1,18 +1,33 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { ItemService } from './item.service';
 import { RetrievePriceDto } from './dto/retrievePriceDto';
+import { AuthGuard } from '@nestjs/passport';
+import { UserService } from '../user/user.service';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('item')
 export class ItemController {
-    constructor(private readonly itemService: ItemService) {}
+    constructor(
+        private readonly itemService: ItemService,
+        private readonly userService: UserService,
+    ) {}
 
     @Post()
-    async retrieveItemPriceFromLink(@Body() body: RetrievePriceDto): Promise<any> {
-        return this.itemService.retrieveItemPriceFromLink(body.link);
+    async insertAndSubscribe(@Body() body: RetrievePriceDto, @Req() req): Promise<any> {
+        console.log('req ', req.user)
+        const googleId = req.user.googleId;
+        return this.itemService.retrieveItemPriceFromLink(body.link, googleId);
     }
 
     @Get()
-    async getItems(): Promise<any> {
-        return this.itemService.findAll();
+    async getItems(@Req() req): Promise<any> {
+        console.log('req ', req.user)
+        const googleId = req.user.googleId;
+        return this.userService.findUserItemsByGoogleId(googleId);
+    }
+
+    @Get('user')
+    async getUserItems(): Promise<any> {
+        return [];
     }
 }
