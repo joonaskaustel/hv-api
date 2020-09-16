@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Item } from '../item/item.entity';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
+import { EmailService } from '../email/email.service';
 
 @Module({
     imports: [
@@ -12,6 +13,7 @@ import { User } from '../user/user.entity';
         TypeOrmModule.forFeature([User]),
         HttpModule,
     ],
-    providers: [TaskService, ItemService, UserService],
+    providers: [TaskService, ItemService, UserService, EmailService],
 })
-export class TasksModule {}
+export class TasksModule {
+}

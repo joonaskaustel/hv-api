@@ -14,14 +14,12 @@ export class ItemController {
 
     @Post()
     async insertAndSubscribe(@Body() body: RetrievePriceDto, @Req() req): Promise<any> {
-        console.log('req ', req.user)
         const googleId = req.user.googleId;
-        return this.itemService.retrieveItemPriceFromLink(body.link, googleId);
+        return this.itemService.saveUserItem(body.link, googleId);
     }
 
     @Get()
     async getItems(@Req() req): Promise<any> {
-        console.log('req ', req.user)
         const googleId = req.user.googleId;
         return this.userService.findUserItemsByGoogleId(googleId);
     }
