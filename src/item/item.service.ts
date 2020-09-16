@@ -5,6 +5,7 @@ import { Item } from './item.entity';
 import * as puppeteer from 'puppeteer';
 import { UserService } from '../user/user.service';
 import { EmailService } from '../email/email.service';
+import {EvaluateFnReturnType} from "puppeteer";
 
 @Injectable()
 export class ItemService {
@@ -30,10 +31,10 @@ export class ItemService {
         // get all items
         const allItems = await this.repository.find();
 
-        allItems.forEach(async (item) => {
-            const currentPrice = await this.retrieveLowestPriceFromLink(item.urlLink);
-            await this.updateItemPrice(item.urlLink, currentPrice);
-        });
+        for (const item of allItems) {
+            const currentItem = await this.retrieveItemFromLink(item.urlLink);
+            await this.updateItemPrice(item.urlLink, currentItem.lowestPrice);
+        }
 
         return;
     }
@@ -50,7 +51,7 @@ export class ItemService {
         }
 
         // get item price
-        const itemPrice = await this.retrieveLowestPriceFromLink(link);
+        const item = await this.retrieveItemFromLink(link);
 
         // check if item is already present in db
         const presentItem = await this.repository.findOne({ urlLink: link}, { relations: ['users'] });
@@ -58,9 +59,10 @@ export class ItemService {
         // if item is not present, create new. else attach current user to item users
         if (!presentItem) {
             const newItem = new Item();
-            newItem.price = itemPrice;
+            newItem.price = item.lowestPrice;
+            newItem.imageUrl = item.imageUrl;
             newItem.urlLink = link;
-            newItem.name = link;
+            newItem.name = item.name;
             newItem.users = [user];
             return await this.repository.save(newItem);
         } else {
@@ -71,30 +73,49 @@ export class ItemService {
         }
     }
 
-    async retrieveLowestPriceFromLink(link): Promise<number> {
+    async retrieveItemFromLink(link): Promise<EvaluateFnReturnType<() => { lowestPrice: number; imageUrl: string; name: string }>> {
         // puppeteer setup
         const browser = await puppeteer.launch({
-            args : [
+            headless: true,
+            args: [
                 '--no-sandbox',
-                '--disable-setuid-sandbox'
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
             ]
         });
         const page = await browser.newPage();
         await page.goto(link);
 
         // use puppeteers evaluate method to retrieve elements
-        const prices = await page.evaluate(() => {
+        const data = await page.evaluate(() => {
+
             // get main prices by using their class name
-            return Array.from(document.getElementsByClassName('extra-offers-price'), e => {
+            const prices = Array.from(document.getElementsByClassName('extra-offers-price'), e => {
                 // after base price element is retrieved, get attribute to get price without currency
-                return parseFloat(e.getAttribute('data-price'))
+                return parseFloat(e.getAttribute('data-price'));
             })
+            const lowestPrice = Math.min(...prices);
+
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            const imageUrl = document.querySelector('p[class="inner product-image"] > a[class="modal-image cboxElement"]').href;
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            const name = document.querySelector('p[class="inner product-image"] > a[class="modal-image cboxElement"]').title;
+
+            return {
+                lowestPrice,
+                imageUrl,
+                name
+            }
         });
 
-        browser.close();
-
-        // get lowest price
-        return Math.min(...prices);
+        await browser.close();
+        return data;
     }
 
     async updateItemPrice(link: string, newPrice: number): Promise<number> {

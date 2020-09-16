@@ -23,6 +23,9 @@ export class Item {
     @Column({nullable: false, type: 'numeric'})
     price: number;
 
+    @Column()
+    imageUrl: string;
+
     @CreateDateColumn()
     createdAt: Date;
 
