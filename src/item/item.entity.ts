@@ -23,7 +23,7 @@ export class Item {
     @Column({nullable: false, type: 'numeric'})
     price: number;
 
-    @Column()
+    @Column({ nullable: false })
     imageUrl: string;
 
     @CreateDateColumn()
