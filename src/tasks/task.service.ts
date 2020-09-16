@@ -1,7 +1,6 @@
 import { HttpService, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ItemService } from '../item/item.service';
-import * as chalk from 'chalk';
 
 @Injectable()
 export class TaskService {
@@ -16,5 +15,5 @@ export class TaskService {
     @Cron(CronExpression.EVERY_30_SECONDS)
     async updatePrices(): Promise<void> {
         await this.itemService.updatePrices();
-    };
+    }
 }
