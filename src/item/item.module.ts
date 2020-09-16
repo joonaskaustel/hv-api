@@ -8,6 +8,7 @@ import { JwtStrategy } from '../auth/jwt.strategy';
 import { AuthService } from '../auth/auth.service';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
+import { EmailService } from '../email/email.service';
 
 @Module({
     imports: [
@@ -20,6 +21,7 @@ import { User } from '../user/user.entity';
         JwtStrategy,
         AuthService,
         UserService,
+        EmailService,
     ],
     controllers: [ItemController],
 })

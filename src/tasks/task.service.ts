@@ -13,7 +13,7 @@ export class TaskService {
 
     private readonly logger = new Logger(TaskService.name);
 
-    @Cron(CronExpression.EVERY_DAY_AT_7PM)
+    @Cron(CronExpression.EVERY_30_SECONDS)
     async updatePrices(): Promise<void> {
         await this.itemService.updatePrices();
     };

@@ -3,8 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { getRepository, Repository, SelectQueryBuilder } from 'typeorm';
 import { Item } from './item.entity';
 import * as puppeteer from 'puppeteer';
-import * as SendGrid from '@sendgrid/mail';
 import { UserService } from '../user/user.service';
+import { EmailService } from '../email/email.service';
+import {EvaluateFnReturnType} from "puppeteer";
 
 @Injectable()
 export class ItemService {
@@ -13,20 +14,13 @@ export class ItemService {
       @InjectRepository(Item)
       private repository: Repository<Item>,
       private userService: UserService,
+      private emailService: EmailService,
     ) {}
 
     async createQueryBuilder(): Promise<SelectQueryBuilder<Item>> {
         return getRepository(Item).createQueryBuilder(`${this.alias}`)
           .leftJoinAndSelect(`"${this.alias}".users`, 'u')
           ;
-    }
-
-    findAll(): Promise<Item[]> {
-        return this.repository.find();
-    }
-
-    findOne(id: string): Promise<Item> {
-        return this.repository.findOne(id);
     }
 
     async remove(id: string): Promise<void> {
@@ -38,16 +32,48 @@ export class ItemService {
         const allItems = await this.repository.find();
 
         for (const item of allItems) {
-            await this.retrieveItemPriceFromLink(item.urlLink);
+            const currentItem = await this.retrieveItemFromLink(item.urlLink);
+            await this.updateItemPrice(item.urlLink, currentItem.lowestPrice);
+        }
+
+        return;
+    }
+
+    async saveUserItem(link, googleId): Promise<any> {
+        // get user by google id
+        const user = await this.userService.findOneByGoogleId(googleId);
+
+        // check if user already has this item
+        const userHasItem = user.items.find((i) => i.urlLink === link);
+
+        if (userHasItem) {
+            return userHasItem;
+        }
+
+        // get item price
+        const item = await this.retrieveItemFromLink(link);
+
+        // check if item is already present in db
+        const presentItem = await this.repository.findOne({ urlLink: link}, { relations: ['users'] });
+
+        // if item is not present, create new. else attach current user to item users
+        if (!presentItem) {
+            const newItem = new Item();
+            newItem.price = item.lowestPrice;
+            newItem.imageUrl = item.imageUrl;
+            newItem.urlLink = link;
+            newItem.name = item.name;
+            newItem.users = [user];
+            return await this.repository.save(newItem);
+        } else {
+            const users = presentItem.users;
+            users.push(user);
+            presentItem.users = users;
+            return await this.repository.save(presentItem);
         }
     }
 
-    async saveItemWithUser(link, googleId): Promise<any> {
-
-    }
-
-    async retrieveItemPriceFromLink(link: string, googleId?: string): Promise<number> {
-
+    async retrieveItemFromLink(link): Promise<EvaluateFnReturnType<() => { lowestPrice: number; imageUrl: string; name: string }>> {
         // puppeteer setup
         const browser = await puppeteer.launch({
             headless: true,
@@ -72,6 +98,7 @@ export class ItemService {
                 // after base price element is retrieved, get attribute to get price without currency
                 return parseFloat(e.getAttribute('data-price'));
             })
+            const lowestPrice = Math.min(...prices);
 
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
@@ -81,63 +108,36 @@ export class ItemService {
             const name = document.querySelector('p[class="inner product-image"] > a[class="modal-image cboxElement"]').title;
 
             return {
-                prices,
+                lowestPrice,
                 imageUrl,
                 name
             }
         });
 
         await browser.close();
+        return data;
+    }
 
-        // get lowest price
-        const currentLowestPrice = Math.min(...data.prices);
-
+    async updateItemPrice(link: string, newPrice: number): Promise<number> {
         // check if item is already in db
-        let presentItem = await this.repository.findOne({ urlLink: link}, { relations: ['users'] })
+        const presentItem = await this.repository.findOne({ urlLink: link}, { relations: ['users'] })
 
-        // if not then save
+        // if not then exit
         if (!presentItem) {
-            presentItem = await this.repository.save({ name: data.name, price: currentLowestPrice, urlLink: link, imageUrl: data.imageUrl })
-        } else {
-            // check if current price is lower than previous checked price
-            if (currentLowestPrice < presentItem.price) {
-                console.log('saadan meili')
-                // notify user when price is cheaper
-                SendGrid.setApiKey(process.env.SENDGRID_API_KEY);
-                const msg = {
-                    to: 'joonas.kaustel@gmail.com',
-                    from: 'hinnasula@sula.com',
-                    subject: 'Hinnateavitus',
-                    text: `Toode ${link} on nüüd odavam ja maksab ${currentLowestPrice}€`,
-                    html: `<strong>Toode ${link} on nüüd odavam ja maksab  ${currentLowestPrice}€</strong>`,
-                };
-                await SendGrid.send(msg);
-            }
-            presentItem = await this.repository.save({ name: 'test', price: currentLowestPrice, urlLink: link });
+            return;
         }
 
-        const user = await this.userService.findOneByGoogleId(googleId);
-
-        const item = await this.repository.findOne({ urlLink: link}, { relations: ['users'] })
-
-        item.users.push(user)
-
-        if (currentLowestPrice < presentItem.price) {
-            // notify user when price is cheaper
-            SendGrid.setApiKey(process.env.SENDGRID_API_KEY);
-            const msg = {
-                to: user.email,
-                from: 'hinnasula@sula.com',
-                subject: 'Hinnateavitus',
-                text: `Toode ${link} on nüüd odavam ja maksab ${currentLowestPrice}€`,
-                html: `<strong>Toode ${link} on nüüd odavam ja maksab  ${currentLowestPrice}€</strong>`,
-            };
-            SendGrid.send(msg);
+        // check if price is lower and then notify user
+        if (newPrice < presentItem.price) {
+            presentItem.users.forEach((user) => {
+                this.emailService.sendPriceNotificationEmail(link, user.email, newPrice);
+            });
         }
 
         // update items price
-        await this.repository.save(item);
+        presentItem.price = newPrice;
+        await this.repository.save(presentItem);
 
-        return currentLowestPrice;
+        return newPrice;
     }
 }

@@ -15,9 +15,6 @@ export class AuthController {
     googleLoginCallback(@Req() req, @Res() res) {
         // handles the Google OAuth2 callback
         const jwt: string = req.user.jwt;
-
-        console.log('req.user ', req.user)
-
         if (jwt)
             res.redirect('http://localhost:3000/login/succes/' + jwt);
         else
