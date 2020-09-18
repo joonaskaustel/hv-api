@@ -14,7 +14,7 @@ export class Item {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({nullable: false})
+    @Column({nullable: true})
     name: string;
 
     @Column({nullable: false})
@@ -23,7 +23,7 @@ export class Item {
     @Column({nullable: false, type: 'numeric'})
     price: number;
 
-    @Column({ nullable: false })
+    @Column({ nullable: true })
     imageUrl: string;
 
     @CreateDateColumn()
