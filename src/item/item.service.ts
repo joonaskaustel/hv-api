@@ -102,10 +102,10 @@ export class ItemService {
 
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
-            const imageUrl = document.querySelector('p[class="inner product-image"] > a[class="modal-image cboxElement"]').href;
+            const imageUrl = document.querySelector('p[class="inner product-image"] > a[class="modal-image cboxElement"]')?.href;
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
-            const name = document.querySelector('p[class="inner product-image"] > a[class="modal-image cboxElement"]').title;
+            const name = document.querySelector('p[class="inner product-image"] > a[class="modal-image cboxElement"]')?.title;
 
             return {
                 lowestPrice,
