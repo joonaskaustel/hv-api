@@ -34,14 +34,11 @@ export class UserService {
     }
 
     async save(user: User): Promise<User> {
-        console.log('user ', user)
         return await this.usersRepository.save(user);
     }
 
     async findUserItemsByGoogleId(googleId: string) {
         const user = await this.findOneByGoogleId(googleId);
-
-        console.log('user: ', user)
 
         return user.items;
 
