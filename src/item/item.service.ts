@@ -6,6 +6,8 @@ import * as puppeteer from 'puppeteer';
 import { UserService } from '../user/user.service';
 import { EmailService } from '../email/email.service';
 import {EvaluateFnReturnType} from "puppeteer";
+import { remove } from 'lodash';
+import { User } from '../user/user.entity';
 
 @Injectable()
 export class ItemService {
@@ -71,6 +73,19 @@ export class ItemService {
             presentItem.users = users;
             return await this.repository.save(presentItem);
         }
+    }
+
+    async deleteUserItem(itemId: number, googleId: string): Promise<User> {
+        // get user by google id
+        const user = await this.userService.findOneByGoogleId(googleId);
+
+        // remove item from user
+        user.items = remove(user.items, (i) => {
+            return i.id != itemId;
+        })
+
+        // save user
+        return await this.userService.save(user);
     }
 
     async retrieveItemFromLink(link): Promise<EvaluateFnReturnType<() => { lowestPrice: number; imageUrl: string; name: string }>> {
